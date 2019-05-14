@@ -48,7 +48,7 @@ class WaypointUpdater(object):
         self.loop()
 
     def loop(self):
-        rate = rospy.Rate(25)
+        rate = rospy.Rate(20)
         while not rospy.is_shutdown():
             if self.pose and self.base_lane:
                 self.publish_waypoints()
@@ -98,10 +98,10 @@ class WaypointUpdater(object):
             p = Waypoint()
             p.pose = wp.pose
             # n waypoints back from stop line so the front of the car stops at the line
-            n = 3
+            n = 4
             stop_idx = max(self.stopline_wp_idx - closest_idx - n, 0)
             dist = self.distance(waypoints, i, stop_idx)
-            vel = math.sqrt(2 * MAX_DECEL * dist)
+            vel = math.sqrt(2 * MAX_DECEL * dist) + i/LOOKAHEAD_WPS # Extra term to smooth the braking 
             if vel < 1.0:
                 vel = 0.0
             

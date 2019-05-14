@@ -5,6 +5,7 @@ from lowpass import LowPassFilter
 
 GAS_DENSITY = 2.858
 ONE_MPH = 0.44704
+MAX_BRAKE = 500
 
 class Controller(object):
     def __init__(self,vehicle_mass,fuel_capacity,brake_deadband,decel_limit,
@@ -61,13 +62,14 @@ class Controller(object):
         # If car is going slow and the target speed is 0, it stops
         if linear_vel == 0. and current_vel < 0.1:
             throttle = 0.
-            brake = 700 # N*m - to hold the car in place if it needs to stop
+            brake = MAX_BRAKE # N*m - to hold the car in place if it needs to stop
 
         # If car's throttle is small and it is going faster than it should, it slows down
         elif throttle < 0.1 and vel_error < 0:
             throttle = 0.
             decel = max(vel_error, self.decel_limit)
             brake = abs(decel)*self.vehicle_mass*self.wheel_radius # Torque N*m
+            brake = min(brake,MAX_BRAKE)
 
         return throttle, brake, steering
 

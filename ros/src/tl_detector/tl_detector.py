@@ -61,7 +61,7 @@ class TLDetector(object):
     def waypoints_cb(self, waypoints):
         self.waypoints = waypoints
         if not self.waypoints_2d:
-            self.waypoints_2d = [[wp.pose.pose.position.x,wp.pose.pose.position.x] for wp in waypoints.waypoints]
+            self.waypoints_2d = [[wp.pose.pose.position.x,wp.pose.pose.position.y] for wp in waypoints.waypoints]
         self.waypoint_tree = KDTree(self.waypoints_2d)
 
     def traffic_cb(self, msg):
@@ -75,6 +75,9 @@ class TLDetector(object):
             msg (Image): image from car-mounted camera
 
         """
+        if not self.waypoint_tree:
+            return
+
         self.has_image = True
         self.camera_image = msg
         light_wp, state = self.process_traffic_lights()
@@ -120,12 +123,12 @@ class TLDetector(object):
             int: ID of traffic light color (specified in styx_msgs/TrafficLight)
 
         """
+        if(not self.has_image):
+            self.prev_light_loc = None
+            return False
+
         # for testing, just return the light state
         return  light.state
-
-        # if(not self.has_image):
-        #     self.prev_light_loc = None
-        #     return False
 
         # cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "bgr8")
 

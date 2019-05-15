@@ -119,6 +119,7 @@ class TLClassifier(object):
                 # If at least 1 red traffic light is found, return red.
                 if (np.argmax(intensities) == 0) and (intensities[0] > self.intensity_threshold):
                     return TrafficLight.RED
+        
         return TrafficLight.UNKNOWN
             
         

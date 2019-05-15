@@ -14,7 +14,7 @@ from scipy.spatial import KDTree
 
 STATE_COUNT_THRESHOLD = 3
 YOLO_MIN_CONFIDENCE = 0.75
-YOLO_MODEL_PATH ="../../../model-yolo/"
+YOLO_MODEL_PATH ="../../../../yolo_model"
 
 class TLDetector(object):
     def __init__(self):

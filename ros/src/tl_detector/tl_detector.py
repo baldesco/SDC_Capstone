@@ -13,6 +13,8 @@ import yaml
 from scipy.spatial import KDTree
 
 STATE_COUNT_THRESHOLD = 3
+YOLO_MIN_CONFIDENCE = 0.75
+YOLO_MODEL_PATH ="../../../model-yolo/"
 
 class TLDetector(object):
     def __init__(self):
@@ -42,7 +44,7 @@ class TLDetector(object):
         self.upcoming_red_light_pub = rospy.Publisher('/traffic_waypoint', Int32, queue_size=1)
 
         self.bridge = CvBridge()
-        self.light_classifier = TLClassifier()
+        self.light_classifier = TLClassifier(YOLO_MIN_CONFIDENCE, YOLO_MODEL_PATH)
         self.listener = tf.TransformListener()
 
         self.state = TrafficLight.UNKNOWN
@@ -128,12 +130,12 @@ class TLDetector(object):
             return False
 
         # for testing, just return the light state
-        return  light.state
+        # return  light.state
 
-        # cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "bgr8")
+        cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "bgr8")
 
         # #Get classification
-        # return self.light_classifier.get_classification(cv_image)
+        return self.light_classifier.get_classification(cv_image)
 
     def process_traffic_lights(self):
         """Finds closest visible traffic light, if one exists, and determines its

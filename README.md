@@ -5,10 +5,7 @@ ____________________________________________
 
 Table of Contents:
 1. Project Introduction
-2. Build Instructions
-3. Reflection on how to tune the controller parameters
-4. Results
-
+2. Build and usage Instructions
 
 ## 1. Project Introduction
 This is the project repo for the final project of the Udacity Self-Driving Car Nanodegree: Programming a Real Self-Driving Car. 
@@ -30,7 +27,7 @@ After completing this step, the car drives in the simulator following the waypoi
 3. Perform traffic light detection, and determining the closest waypoint to a red traffic light. For the detection of traffic lights, a YOLO V3 model was used. This model was previously trained on the COCO dataset, which contains 80 different classes (one of them is traffic light). This model is used to find traffic lights on the image, and then a simple algorithm is applied to find the light with the highest intensity. This algorithm determines whether a traffic light is on red or not.
 4. Finally, the waypoint updater script is modified, so it can take into account the case when the car sees a red traffic light, and must stop.
 
-## 2. Build instructions
+## 2. Build and usage instructions
 Please use **one** of the two installation options, either native **or** docker installation.
 
 ### 2.1 Native Installation

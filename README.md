@@ -1,9 +1,7 @@
-# **Capstone project 8: Programming a Real Self-Driving Car**
+# **Capstone project: Programming a Real Self-Driving Car**
 
 This document presents the work developed for the capstone project of the SDC Nanodegree.
 ____________________________________________
-
-https://pjreddie.com/media/files/yolov3.weights
 
 Table of Contents:
 1. Project Introduction
@@ -11,136 +9,31 @@ Table of Contents:
 3. Reflection on how to tune the controller parameters
 4. Results
 
+
 ## 1. Project Introduction
-In this project you'll revisit the lake race track from the Behavioral Cloning Project. This time, however, you'll implement a PID controller in C++ to maneuver the vehicle around the track!
+This is the project repo for the final project of the Udacity Self-Driving Car Nanodegree: Programming a Real Self-Driving Car. 
 
-The simulator will provide you the cross track error (CTE) and the velocity (mph) in order to compute the appropriate steering angle.
+For this project, to objective is to write ROS nodes to implement core functionality of the autonomous vehicle system, including traffic light detection, control, and waypoint following! The code is tested first on a simulator.
 
-The speed limit has been increased from 30 mph to 100 mph. Get ready to channel your inner Vin Diesel and try to drive SAFELY as fast as possible! NOTE: you don't have to meet a minimum speed to pass.
+The following is a system architecture diagram showing the ROS nodes and topics used in the project. It consists of 3 main modules: perception, planning,and control.
 
-### 1.1. Input Data
-Here is the relevant data provided from the Simulator to the C++ Program
+<img src="imgs/architecture.png" width="600">
 
-["cte"] The car's cross track error with respect to the desired position in the track.
+### 1.1 Approach taken to complete the project
 
-["angle"] The car's steering angle in degrees
+The project was completed by following the walkthrougs given in the course lessons. the order of execution was the following:
 
-["speed"] The car's speed in MPH
+1. Complete a partial waypoint updater which subscribes to `/base_waypoints` and `/current_pose` and publishes to `/final_waypoints`.
+2. Once the waypoint updater is publishing `/final_waypoints`, the waypoint_follower node will start publishing messages to the `/twist_cmd topic`. At this point, the controll part of the system can be completed. This includes modifying the `dbw_node.py` and `twist_controller.py` scripts.
+After completing this step, the car drives in the simulator following the waypoints, ignoring the traffic lights.
 
-### 1.2. Output Data
-
-The algorithm produces 2 variables to drive the car:
-
-["steering_angle"] The angle to steer the car, in order to minimize the cte. This value is provided by the PID controller.
-
-["throttle"] Amount of positive or negative acceleration to change the car's speed.
+3. Perform traffic light detection, and determining the closest waypoint to a red traffic light. For the detection of traffic lights, a YOLO V3 model was used. This model was previously trained on the COCO dataset, which contains 80 different classes (one of them is traffic light). This model is used to find traffic lights on the image, and then a simple algorithm is applied to find the light with the highest intensity. This algorithm determines whether a traffic light is on red or not.
+4. Finally, the waypoint updater script is modified, so it can take into account the case when the car sees a red traffic light, and must stop.
 
 ## 2. Build instructions
-### 2.1. Dependencies
-
-* cmake >= 3.5
- * All OSes: [click here for installation instructions](https://cmake.org/install/)
-* make >= 4.1(mac, linux), 3.81(Windows)
-  * Linux: make is installed by default on most Linux distros
-  * Mac: [install Xcode command line tools to get make](https://developer.apple.com/xcode/features/)
-  * Windows: [Click here for installation instructions](http://gnuwin32.sourceforge.net/packages/make.htm)
-* gcc/g++ >= 5.4
-  * Linux: gcc / g++ is installed by default on most Linux distros
-  * Mac: same deal as make - [install Xcode command line tools]((https://developer.apple.com/xcode/features/)
-  * Windows: recommend using [MinGW](http://www.mingw.org/)
-* [uWebSockets](https://github.com/uWebSockets/uWebSockets)
-  * Run either `./install-mac.sh` or `./install-ubuntu.sh`.
-  * If you install from source, checkout to commit `e94b6e1`, i.e.
-    ```
-    git clone https://github.com/uWebSockets/uWebSockets 
-    cd uWebSockets
-    git checkout e94b6e1
-    ```
-    Some function signatures have changed in v0.14.x. See [this PR](https://github.com/udacity/CarND-MPC-Project/pull/3) for more details.
-* Simulator. You can download these from the [project intro page](https://github.com/udacity/self-driving-car-sim/releases) in the classroom.
-
-Fellow students have put together a guide to Windows set-up for the project [here](https://s3-us-west-1.amazonaws.com/udacity-selfdrivingcar/files/Kidnapped_Vehicle_Windows_Setup.pdf) if the environment you have set up for the Sensor Fusion projects does not work for this project. There's also an experimental patch for windows in this [PR](https://github.com/udacity/CarND-PID-Control-Project/pull/3).
-
-### 2.2. Basic Build Instructions
-
-1. Clone this repo.
-2. Make a build directory: `mkdir build && cd build`
-3. Compile: `cmake .. && make`
-4. Run it: `./pid`. 
-
-Tips for setting up your environment can be found [here](https://classroom.udacity.com/nanodegrees/nd013/parts/40f38239-66b6-46ec-ae68-03afd8a601c8/modules/0949fca6-b379-42af-a919-ee50aa304e6a/lessons/f758c44c-5e40-4e01-93b5-1a82aa4e044f/concepts/23d376c7-0195-4276-bdf0-e02f1f3c665d)
-
-## 3. Reflection on how to tune the controller
-
-The tuning of the PID controller parameters was done manually. For this, the following steps were executed:
-
-* First, I reduced the car acceleration, which initially is fixed to 0.3. This causes that the car is always accelerating and makes it difficult to control its steering. To reduce its speed, I defined a low target velocty of 10 MPH, and adjusted the throttle (starting now at 0) so the car's speed was around this value:
-
-```
-// Change in the car's trhottle to follow the target speed
-if (speed > target_vel){
-  throttle -= 0.1;
-} else{
-  throttle += 0.05;
-} 
-```
-
-* Then, now that the car's speed is somehow low and stable, I started to manually set the PID parameters. I set the *kd* and *ki* gains to 0, and the *kp* gain to 1, and started modifying this value. This proportional gain controls how the car responds to not being in the center of the lane, and I saw that the car is very sensible to this parameter. Small values of *kp* produced significant steering changes that result in the car making abrupt changes in its direction. Taking this into account, I started lowering the proportional gain, until the car started driving a little more smoothly.
-* After *kp* is set, the next value to consider was the derivative gain *kd*. This is a very important parameter in this case, since it helps to reduce the cte while also reducing overshoots, which for the car means less driving from one side to the other and more close to the center of the lane. This gain has the biggest weight in the controller.
-* The last gain to tune was *ki*. This parameter helps to reduce the accumulative cte along the lane, which helps the car achieve the center of the lane despite bias in its actuators. However, this is a track with many curves, and that increases a lot the accumulative cte. Due to this, small values of *ki* can generate great impacts on how the car makes turns. Taking this into account, the value for *ki* in the model was set very small.
-* Once the controller parameters were tuned, the car was driving a lot better, but still at a speed of 10 MPH. The objective now was to increase te car's velocity, mantaining it driving inside the race track. For this, the `target_velocity` parameter was slowly increased. A important thing to take into account is that the car should try to minimize its throttle, to save energy (gas, braking) and have a more comfortable trajectory. In order to do so, a hysteresis controller was introduced, to mantain the car's speed within a desired margin around the target velocity. If the car is within this margin, it does not accelerate, and will speed up/down if it is under/over the margin:
-
-```
-// Change in the car's trhottle to follow the target speed
-if (speed > target_vel + target_vel_margin){
-  throttle -= 0.1;
-} else if(speed < target_vel + target_vel_margin) {
-  throttle += 0.05;
-} else {
-  // Don't accelerate if the car is within the target speed tolerance zone
-  throttle = 0.0;
-}
-```
-
-Also, if the car is making a step turn, it will slow down for safety: 
-
-```
-// Reduce the car's speed if it is making a steep turn
-if (fabs(angle) > 8.0){
-  throttle -= 0.2;
-  // Allow the car to break a little
-  throttle = clip_signal(throttle,-0.08,0.5);
-}
-```
-
-Both outputs of the program (steering angle and throttle) are cliped before passing them to the simulator, so they don't exceed some upper and lower limits.
-
-* Finally, introducing these changes in the car's speed made it necessary to do some final tuning on the PID parameters. The final parameters chosen were:
-
-```
-// PIDs parameters
-kp = 0.15;
-ki = 0.002;
-kd = 3.1;
-```
-
-## 4. Results
-This project's main criteria to determine if the implementation of the controller is successful is that:
-
-*No tire may leave the drivable portion of the track surface. The car may not pop up onto ledges or roll over any surfaces that would otherwise be considered unsafe (if humans were in the vehicle).*
-
-Below, I show a video of the car driving around the race track. It still has some small undesired "zigzag" behavior at some points, but in overall it drives safely around the track. Using a dynamic model representation of the car and some tuning algorithm like Twiddle, it could be possible to get better values for the PID parameters.
-
-<img src="media/1.gif" width="600">
-
-In general, the car is able to achieve speeds over 40 MPH in a relatively safe manner. However, the fastest the car goes, the more visible is its "zigzag" effect.
-
-
-This is the project repo for the final project of the Udacity Self-Driving Car Nanodegree: Programming a Real Self-Driving Car. For more information about the project, see the project introduction [here](https://classroom.udacity.com/nanodegrees/nd013/parts/6047fe34-d93c-4f50-8336-b70ef10cb4b2/modules/e1a23b06-329a-4684-a717-ad476f0d8dff/lessons/462c933d-9f24-42d3-8bdc-a08a5fc866e4/concepts/5ab4b122-83e6-436d-850f-9f4d26627fd9).
-
 Please use **one** of the two installation options, either native **or** docker installation.
 
-### Native Installation
+### 2.1 Native Installation
 
 * Be sure that your workstation is running Ubuntu 16.04 Xenial Xerus or Ubuntu 14.04 Trusty Tahir. [Ubuntu downloads can be found here](https://www.ubuntu.com/download/desktop).
 * If using a Virtual Machine to install Ubuntu, use the following configuration as minimum:
@@ -157,7 +50,7 @@ Please use **one** of the two installation options, either native **or** docker 
   * Use this option to install the SDK on a workstation that already has ROS installed: [One Line SDK Install (binary)](https://bitbucket.org/DataspeedInc/dbw_mkz_ros/src/81e63fcc335d7b64139d7482017d6a97b405e250/ROS_SETUP.md?fileviewer=file-view-default)
 * Download the [Udacity Simulator](https://github.com/udacity/CarND-Capstone/releases).
 
-### Docker Installation
+### 2.2 Docker Installation
 [Install Docker](https://docs.docker.com/engine/installation/)
 
 Build the docker container
@@ -170,31 +63,36 @@ Run the docker file
 docker run -p 4567:4567 -v $PWD:/capstone -v /tmp/log:/root/.ros/ --rm -it capstone
 ```
 
-### Port Forwarding
-To set up port forwarding, please refer to the [instructions from term 2](https://classroom.udacity.com/nanodegrees/nd013/parts/40f38239-66b6-46ec-ae68-03afd8a601c8/modules/0949fca6-b379-42af-a919-ee50aa304e6a/lessons/f758c44c-5e40-4e01-93b5-1a82aa4e044f/concepts/16cf4a78-4fc7-49e1-8621-3450ca938b77)
-
-### Usage
+### 2.3 Usage
 
 1. Clone the project repository
 ```bash
-git clone https://github.com/udacity/CarND-Capstone.git
+git clone https://github.com/baldesco/SDC_Capstone.git
 ```
 
 2. Install python dependencies
 ```bash
-cd CarND-Capstone
+cd SDC_Capstone
 pip install -r requirements.txt
 ```
-3. Make and run styx
+**Note:** This project needs opencv >= 3.4.3 in order to be able to perform object detection. If this is not possible, this part must be commented out. (The code is currently commented out in the parts that involve opencv>=3.4.3, and the light detection is just gotten from the simulator).
+
+3. Download the files for the object detection model
+
+The following command will create a new folder `yolo_model`, and download to it the weights and config files for the YOLO model, used for the detection of traffic lights. 
+```bash
+source download_model_files.sh
+```
+4. Make and run styx
 ```bash
 cd ros
 catkin_make
 source devel/setup.sh
 roslaunch launch/styx.launch
 ```
-4. Run the simulator
+5. Run the simulator
 
-### Real world testing
+### 2.4 Real world testing
 1. Download [training bag](https://s3-us-west-1.amazonaws.com/udacity-selfdrivingcar/traffic_light_bag_file.zip) that was recorded on the Udacity self-driving car.
 2. Unzip the file
 ```bash
@@ -211,7 +109,7 @@ roslaunch launch/site.launch
 ```
 5. Confirm that traffic light detection works on real life images
 
-### Other library/driver information
+### 2.5 Other library/driver information
 Outside of `requirements.txt`, here is information on other driver/library versions used in the simulator and Carla:
 
 Specific to these libraries, the simulator grader and Carla use the following:
@@ -226,3 +124,4 @@ Specific to these libraries, the simulator grader and Carla use the following:
 | OpenMP | N/A | N/A |
 
 We are working on a fix to line up the OpenCV versions between the two.
+

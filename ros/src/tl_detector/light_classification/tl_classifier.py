@@ -14,11 +14,11 @@ class TLClassifier(object):
         self.configPath = os.path.sep.join([yolo_path,'yolov3.cfg'])
 
         # Load YOLO V3 model trained on COCO dataset (80 classes)
-        self.net = cv2.dnn.readNetFromDarknet(self.configPath, self.weigthsPath)
+        # self.net = cv2.dnn.readNetFromDarknet(self.configPath, self.weigthsPath)
 
         # Determine the out layers that we need from the model
-        self.ln = self.net.getLayerNames()
-        self.ln = [self.ln[i[0] - 1] for i in self.net.getUnconnectedOutLayers()]
+        # self.ln = self.net.getLayerNames()
+        # self.ln = [self.ln[i[0] - 1] for i in self.net.getUnconnectedOutLayers()]
         
         # This parameter is used in the classification of the traffic lights
         self.intensity_threshold = 40
